@@ -728,8 +728,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const encodedTag = encodeURIComponent(payload.discord_tag);
       const tempMsgId = 'TEMP_MSG_ID';
-      const approveUrl = `${reviewBase}?action=approve&tag=${encodedTag}&answers=${answersParam}&message_id=${tempMsgId}`;
-      const rejectUrl  = `${reviewBase}?action=reject&tag=${encodedTag}&answers=${answersParam}&message_id=${tempMsgId}`;
+
+      // Helper to generate review URLs safely (omits answers parameter if it exceeds Discord's 2000-character URL limit)
+      const makeReviewUrls = (msgId) => {
+        let appr = `${reviewBase}?action=approve&tag=${encodedTag}&message_id=${msgId}`;
+        let rej  = `${reviewBase}?action=reject&tag=${encodedTag}&message_id=${msgId}`;
+        
+        const testAppr = `${appr}&answers=${answersParam}`;
+        if (testAppr.length < 2000) {
+          appr = testAppr;
+          rej = `${rej}&answers=${answersParam}`;
+        }
+        return { approveUrl: appr, rejectUrl: rej };
+      };
+
+      const { approveUrl, rejectUrl } = makeReviewUrls(tempMsgId);
 
       // Format field helper with truncation
       const formatEmbedValue = (val, maxLen = 300) => {
@@ -826,9 +839,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (messageId) {
           // 3. Re-create URLs with the actual messageId
-          const finalApproveUrl = `${reviewBase}?action=approve&tag=${encodedTag}&answers=${answersParam}&message_id=${messageId}`;
-          const finalRejectUrl  = `${reviewBase}?action=reject&tag=${encodedTag}&answers=${answersParam}&message_id=${messageId}`;
-          const finalPayload = buildWebhookPayload(finalApproveUrl, finalRejectUrl);
+          const finalUrls = makeReviewUrls(messageId);
+          const finalPayload = buildWebhookPayload(finalUrls.approveUrl, finalUrls.rejectUrl);
 
           // 4. PATCH the message to update the portal links
           let patchUrl = `${CONFIG.WEBHOOK_URL}/messages/${messageId}`;

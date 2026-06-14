@@ -317,10 +317,75 @@
       if (savedReviewer) {
         reviewerNameInput.value = savedReviewer;
       }
-
       let parsedAnswers = null;
-      try {
-        if (rawAnswers) {
+      let fromEmbed = false;
+      let embedQuestions = [];
+
+      // 1. Try to fetch from Discord Message ID if it's available
+      if (messageId && messageId !== 'TEMP_MSG_ID') {
+        try {
+          const fetchUrl = `${CONFIG.WEBHOOK_URL}/messages/${messageId}`;
+          const res = await fetch(fetchUrl);
+          if (res.ok) {
+            const msgData = await res.json();
+            if (msgData.embeds && msgData.embeds[0]) {
+              const embed = msgData.embeds[0];
+              parsedAnswers = {};
+              
+              embed.fields.forEach(f => {
+                const nameClean = f.name.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, '').trim();
+                let valClean = f.value.trim();
+                
+                if (nameClean.includes('Applied Role')) {
+                  parsedAnswers.role_title = valClean;
+                  if (valClean.includes('Staff')) parsedAnswers.role = 'discord_staff';
+                  else if (valClean.includes('Media')) parsedAnswers.role = 'media_team';
+                  else if (valClean.includes('Dev')) parsedAnswers.role = 'rbx_dev';
+                  else if (valClean.includes('Tester')) parsedAnswers.role = 'beta_tester';
+                } else if (nameClean.includes('Discord Username')) {
+                  parsedAnswers.discord_tag = valClean;
+                } else if (nameClean.includes('Discord User ID')) {
+                  parsedAnswers.discord_id = valClean.replace(/`/g, '');
+                } else if (nameClean.includes('Age')) {
+                  parsedAnswers.age = valClean;
+                } else if (nameClean.includes('Timezone')) {
+                  parsedAnswers.timezone = valClean;
+                } else if (nameClean.includes('Hours / Week')) {
+                  parsedAnswers.hours_active = valClean.replace(/\*\*| hrs/g, '');
+                } else if (nameClean.includes('Specialization')) {
+                  parsedAnswers.media_role = valClean;
+                } else if (nameClean.includes('Developer Role')) {
+                  parsedAnswers.dev_role = valClean;
+                } else if (nameClean.includes('Portfolio')) {
+                  parsedAnswers.portfolio = valClean;
+                } else if (nameClean.includes('Roblox Profile')) {
+                  parsedAnswers.roblox_profile = valClean;
+                }
+              });
+
+              // Extract the Q&As
+              embed.fields.forEach(f => {
+                const name = f.name.trim();
+                if (/^\d+\./.test(name)) {
+                  const label = name.replace(/^\d+\.\s*/, '');
+                  embedQuestions.push({
+                    label: label,
+                    value: f.value
+                  });
+                }
+              });
+              
+              fromEmbed = true;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch application details from Discord, falling back to URL parameters...", e);
+        }
+      }
+
+      // 2. Fall back to URL parameter if Discord fetch failed or wasn't available
+      if (!parsedAnswers && rawAnswers) {
+        try {
           const decodedAnswers = decodeURIComponent(rawAnswers);
           if (decodedAnswers.startsWith('c:')) {
             const compressedBase64 = decodedAnswers.substring(2);
@@ -331,39 +396,27 @@
           } else {
             parsedAnswers = JSON.parse(decodedAnswers);
           }
+        } catch (e) {
+          console.error("Failed to parse answers from URL parameters", e);
         }
-      } catch (e) {
-        console.error("Failed to parse answers", e);
       }
 
+      // 3. If still no parsed answers, show error
       if (!parsedAnswers) {
-        showError('Invalid URL parameters', 'No valid application answers were found in the URL. Please make sure you clicked the correct link from Discord.');
+        showError('Invalid URL parameters', 'No valid application answers could be loaded. Please ensure you clicked the correct link from Discord.');
         return;
-      }
-
-      // Find dynamic schema for applicant's role
-      const selectedRole = parsedAnswers.role || 'discord_staff';
-      const schema = ROLE_SCHEMAS[selectedRole];
-
-      // Combine static and dynamic questions for rendering
-      const activeQuestions = [
-        { id: 'discord_tag', label: 'Discord Username' },
-        { id: 'discord_id', label: 'Discord User ID' },
-        { id: 'age', label: 'Age' },
-        { id: 'timezone', label: 'Timezone / Country' }
-      ];
-      
-      if (schema) {
-        schema.questions.forEach(q => {
-          activeQuestions.push(q);
-        });
       }
 
       // Populating basic info
       applicantName.innerText = parsedAnswers.discord_tag || tagParam;
       applicantId.innerText = `Discord ID: ${parsedAnswers.discord_id || 'N/A'}`;
+      
+      const selectedRole = parsedAnswers.role || 'discord_staff';
+      const schema = ROLE_SCHEMAS[selectedRole];
       if (schema) {
         document.getElementById('app-subtitle').innerText = `Reviewing application for: ${schema.title}`;
+      } else if (parsedAnswers.role_title) {
+        document.getElementById('app-subtitle').innerText = `Reviewing application for: ${parsedAnswers.role_title}`;
       }
       
       // Update badge initially based on parameter action
@@ -380,15 +433,68 @@
 
       // Render Questions and Answers
       answersContainer.innerHTML = '';
-      activeQuestions.forEach((q, idx) => {
-        const item = document.createElement('div');
-        item.className = 'qa-item';
-        item.innerHTML = `
-          <div class="qa-question">${idx + 1}. ${q.label}</div>
-          <div class="qa-answer">${escapeHTML(parsedAnswers[q.id] || 'N/A')}</div>
-        `;
-        answersContainer.appendChild(item);
-      });
+      if (fromEmbed && embedQuestions.length > 0) {
+        // Render basic fields first
+        const basicFields = [
+          { label: 'Discord Username', val: parsedAnswers.discord_tag },
+          { label: 'Discord User ID', val: parsedAnswers.discord_id },
+          { label: 'Age', val: parsedAnswers.age },
+          { label: 'Timezone / Country', val: parsedAnswers.timezone },
+          { label: 'Hours / Week', val: parsedAnswers.hours_active ? `${parsedAnswers.hours_active} hrs` : null },
+          { label: 'Specialization', val: parsedAnswers.media_role },
+          { label: 'Developer Role', val: parsedAnswers.dev_role },
+          { label: 'Portfolio', val: parsedAnswers.portfolio },
+          { label: 'Roblox Profile', val: parsedAnswers.roblox_profile }
+        ];
+
+        let idx = 1;
+        basicFields.forEach(f => {
+          if (f.val) {
+            const item = document.createElement('div');
+            item.className = 'qa-item';
+            item.innerHTML = `
+              <div class="qa-question">${idx++}. ${f.label}</div>
+              <div class="qa-answer">${escapeHTML(f.val)}</div>
+            `;
+            answersContainer.appendChild(item);
+          }
+        });
+
+        // Render Q&As from embed
+        embedQuestions.forEach(q => {
+          const item = document.createElement('div');
+          item.className = 'qa-item';
+          item.innerHTML = `
+            <div class="qa-question">${idx++}. ${q.label}</div>
+            <div class="qa-answer">${escapeHTML(q.value)}</div>
+          `;
+          answersContainer.appendChild(item);
+        });
+      } else {
+        // Fallback: render using schema questions
+        const activeQuestions = [
+          { id: 'discord_tag', label: 'Discord Username' },
+          { id: 'discord_id', label: 'Discord User ID' },
+          { id: 'age', label: 'Age' },
+          { id: 'timezone', label: 'Timezone / Country' }
+        ];
+        
+        if (schema) {
+          schema.questions.forEach(q => {
+            activeQuestions.push(q);
+          });
+        }
+
+        activeQuestions.forEach((q, idx) => {
+          const item = document.createElement('div');
+          item.className = 'qa-item';
+          item.innerHTML = `
+            <div class="qa-question">${idx + 1}. ${q.label}</div>
+            <div class="qa-answer">${escapeHTML(parsedAnswers[q.id] || 'N/A')}</div>
+          `;
+          answersContainer.appendChild(item);
+        });
+      }
 
       // Hide loading, show content
       loadingView.classList.add('hidden');
