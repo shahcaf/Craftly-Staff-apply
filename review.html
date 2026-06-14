@@ -536,43 +536,42 @@
           const embedColor = isApproved ? 3066993 : 15158332; // Green or Red
           
           // Rebuild fields from parsedAnswers to keep the single-embed format
-          const formatEmbedValue = (val, maxLen = 300) => {
+          const formatEmbedValue = (val, maxLen) => {
             const text = val || 'N/A';
             if (text.length <= maxLen) return text;
             return text.substring(0, maxLen) + '... *(truncated, view full answer in portal)*';
           };
           const safeVal = (v) => (v !== undefined && v !== null && String(v).trim() !== '') ? String(v).trim() : 'N/A';
 
-          const fields = [
-            { name: 'Applied Role',        value: safeVal(schema ? schema.title : 'Staff Application'), inline: true },
-            { name: 'Discord Username',    value: safeVal(parsedAnswers.discord_tag || tagParam),  inline: true },
-            { name: 'Discord User ID',     value: `\`${safeVal(parsedAnswers.discord_id)}\``, inline: true },
-            { name: 'Age',                 value: safeVal(parsedAnswers.age),          inline: true },
-            { name: 'Timezone / Country',  value: safeVal(parsedAnswers.timezone),     inline: true },
-            { name: 'Hours / Week',        value: parsedAnswers.hours_active ? `${parsedAnswers.hours_active} hrs` : 'N/A', inline: true }
-          ];
+          const getDecisionEmbedJson = (maxValLen) => {
+            const fields = [
+              { name: 'Applied Role',        value: safeVal(schema ? schema.title : 'Staff Application'), inline: true },
+              { name: 'Discord Username',    value: safeVal(parsedAnswers.discord_tag || tagParam),  inline: true },
+              { name: 'Discord User ID',     value: `\`${safeVal(parsedAnswers.discord_id)}\``, inline: true },
+              { name: 'Age',                 value: safeVal(parsedAnswers.age),          inline: true },
+              { name: 'Timezone / Country',  value: safeVal(parsedAnswers.timezone),     inline: true },
+              { name: 'Hours / Week',        value: parsedAnswers.hours_active ? `${parsedAnswers.hours_active} hrs` : 'N/A', inline: true }
+            ];
 
-          if (parsedAnswers.media_role) fields.push({ name: 'Specialization', value: parsedAnswers.media_role, inline: true });
-          else if (parsedAnswers.dev_role) fields.push({ name: 'Developer Role', value: parsedAnswers.dev_role, inline: true });
+            if (parsedAnswers.media_role) fields.push({ name: 'Specialization', value: parsedAnswers.media_role, inline: true });
+            else if (parsedAnswers.dev_role) fields.push({ name: 'Developer Role', value: parsedAnswers.dev_role, inline: true });
 
-          if (parsedAnswers.portfolio) fields.push({ name: 'Portfolio / Past Work', value: parsedAnswers.portfolio, inline: true });
-          if (parsedAnswers.roblox_profile) fields.push({ name: 'Roblox Profile', value: parsedAnswers.roblox_profile, inline: true });
+            if (parsedAnswers.portfolio) fields.push({ name: 'Portfolio / Past Work', value: parsedAnswers.portfolio, inline: true });
+            if (parsedAnswers.roblox_profile) fields.push({ name: 'Roblox Profile', value: parsedAnswers.roblox_profile, inline: true });
 
-          if (schema) {
-            const profileKeys = ['hours_active', 'media_role', 'dev_role', 'roblox_profile', 'portfolio', 'guidelines_agree'];
-            const detailQuestions = schema.questions.filter(q => !profileKeys.includes(q.id));
-            detailQuestions.forEach((q, idx) => {
-              fields.push({
-                name: `${idx + 1}. ${q.label}`,
-                value: formatEmbedValue(parsedAnswers[q.id]),
-                inline: false
+            if (schema) {
+              const profileKeys = ['hours_active', 'media_role', 'dev_role', 'roblox_profile', 'portfolio', 'guidelines_agree'];
+              const detailQuestions = schema.questions.filter(q => !profileKeys.includes(q.id));
+              detailQuestions.forEach((q, idx) => {
+                fields.push({
+                  name: `${idx + 1}. ${q.label}`,
+                  value: formatEmbedValue(parsedAnswers[q.id], maxValLen),
+                  inline: false
+                });
               });
-            });
-          }
-          
-          const webhookBody = {
-            username: 'Staff Review System',
-            embeds: [{
+            }
+
+            return {
               title: embedTitle,
               description: 
                 `Applicant: **${parsedAnswers.discord_tag || tagParam}** (ID: \`${parsedAnswers.discord_id || 'N/A'}\`)\n` +
@@ -583,7 +582,43 @@
               color: embedColor,
               fields: fields,
               timestamp: new Date().toISOString()
-            }],
+            };
+          };
+
+          const calculateEmbedLength = (embedObj) => {
+            let len = 0;
+            if (embedObj.title) len += embedObj.title.length;
+            if (embedObj.description) len += embedObj.description.length;
+            if (embedObj.footer && embedObj.footer.text) len += embedObj.footer.text.length;
+            if (embedObj.author && embedObj.author.name) len += embedObj.author.name.length;
+            if (embedObj.fields) {
+              for (const field of embedObj.fields) {
+                if (field.name) len += field.name.length;
+                if (field.value) len += field.value.length;
+              }
+            }
+            return len;
+          };
+
+          let bestEmbed = null;
+          const attemptValLens = [300, 200, 120, 80, 50];
+          for (const maxValLen of attemptValLens) {
+            const embed = getDecisionEmbedJson(maxValLen);
+            const embedLen = calculateEmbedLength(embed);
+            if (embedLen <= 5800) {
+              bestEmbed = embed;
+              console.log(`Chose review decision embed with maxValLen=${maxValLen} (length: ${embedLen})`);
+              break;
+            }
+          }
+
+          if (!bestEmbed) {
+            bestEmbed = getDecisionEmbedJson(30);
+          }
+
+          const webhookBody = {
+            username: 'Staff Review System',
+            embeds: [bestEmbed],
             components: [] // Clear the components (buttons)
           };
 

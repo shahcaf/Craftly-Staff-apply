@@ -730,22 +730,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const tempMsgId = 'TEMP_MSG_ID';
 
       // Helper to generate review URLs safely (omits answers parameter if it exceeds Discord's 2000-character URL limit)
-      const makeReviewUrls = (msgId) => {
+      const makeReviewUrls = (msgId, includeAnswers) => {
         let appr = `${reviewBase}?action=approve&tag=${encodedTag}&message_id=${msgId}`;
         let rej  = `${reviewBase}?action=reject&tag=${encodedTag}&message_id=${msgId}`;
         
-        const testAppr = `${appr}&answers=${answersParam}`;
-        if (testAppr.length < 2000) {
-          appr = testAppr;
-          rej = `${rej}&answers=${answersParam}`;
+        if (includeAnswers && answersParam) {
+          const testAppr = `${appr}&answers=${answersParam}`;
+          if (testAppr.length < 2000) {
+            appr = testAppr;
+            rej = `${rej}&answers=${answersParam}`;
+          }
         }
         return { approveUrl: appr, rejectUrl: rej };
       };
 
-      const { approveUrl, rejectUrl } = makeReviewUrls(tempMsgId);
-
       // Format field helper with truncation
-      const formatEmbedValue = (val, maxLen = 300) => {
+      const formatEmbedValue = (val, maxLen) => {
         const text = val || 'N/A';
         if (text.length <= maxLen) return text;
         return text.substring(0, maxLen) + '… *(truncated — view full in portal)*';
@@ -757,69 +757,108 @@ document.addEventListener('DOMContentLoaded', () => {
       // Submission timestamp (Discord relative)
       const submittedAt = `<t:${Math.floor(Date.now() / 1000)}:F>`;
 
-      // Profile header fields
-      const fields = [
-        { name: '📋 Applied Role',       value: safeVal(schema.title),         inline: true },
-        { name: '🏷️ Discord Username',   value: safeVal(payload.discord_tag),  inline: true },
-        { name: '🆔 Discord User ID',    value: `\`${safeVal(payload.discord_id)}\``, inline: true },
-        { name: '🎂 Age',                value: safeVal(payload.age),          inline: true },
-        { name: '🌍 Timezone',           value: safeVal(payload.timezone),     inline: true },
-        { name: '⏱️ Hours / Week',       value: payload.hours_active ? `**${payload.hours_active} hrs**` : 'N/A', inline: true },
+      const getEmbedJson = (msgId, includeAnswers, maxValLen) => {
+        const urls = makeReviewUrls(msgId, includeAnswers);
+        
+        const fields = [
+          { name: '📋 Applied Role',       value: safeVal(schema.title),         inline: true },
+          { name: '🏷️ Discord Username',   value: safeVal(payload.discord_tag),  inline: true },
+          { name: '🆔 Discord User ID',    value: `\`${safeVal(payload.discord_id)}\``, inline: true },
+          { name: '🎂 Age',                value: safeVal(payload.age),          inline: true },
+          { name: '🌍 Timezone',           value: safeVal(payload.timezone),     inline: true },
+          { name: '⏱️ Hours / Week',       value: payload.hours_active ? `**${payload.hours_active} hrs**` : 'N/A', inline: true },
+        ];
+
+        if (payload.media_role) {
+          fields.push({ name: '🎨 Specialization', value: payload.media_role, inline: true });
+        } else if (payload.dev_role) {
+          fields.push({ name: '💻 Developer Role', value: payload.dev_role, inline: true });
+        }
+
+        if (payload.portfolio) {
+          fields.push({ name: '🔗 Portfolio', value: payload.portfolio, inline: true });
+        }
+        if (payload.roblox_profile) {
+          fields.push({ name: '🎮 Roblox Profile', value: payload.roblox_profile, inline: true });
+        }
+
+        fields.push({ name: '\u200b', value: '━━━━━━━━━━━━━━━━━━━━━━', inline: false });
+
+        const profileKeys = ['hours_active', 'media_role', 'dev_role', 'roblox_profile', 'portfolio', 'guidelines_agree'];
+        const detailQuestions = schema.questions.filter(q => !profileKeys.includes(q.id));
+
+        detailQuestions.forEach((q, idx) => {
+          fields.push({
+            name: `${idx + 1}. ${q.label}`,
+            value: formatEmbedValue(payload[q.id], maxValLen),
+            inline: false
+          });
+        });
+
+        return {
+          title: `📝 New Application — ${payload.discord_tag}`,
+          description:
+            `A new **${schema.title}** application was submitted.\n\n` +
+            `> 📅 Submitted: ${submittedAt}\n\n` +
+            `**⚡ Quick Actions:**\n` +
+            `• [🟢 Open Portal & Approve](${urls.approveUrl})\n` +
+            `• [🔴 Open Portal & Reject](${urls.rejectUrl})`,
+          color: CONFIG.COLOR_PENDING,
+          fields,
+          footer: {
+            text: `${CONFIG.SERVER_NAME} • Staff Application Portal`,
+          },
+          timestamp: new Date().toISOString()
+        };
+      };
+
+      const calculateEmbedLength = (embedObj) => {
+        let len = 0;
+        if (embedObj.title) len += embedObj.title.length;
+        if (embedObj.description) len += embedObj.description.length;
+        if (embedObj.footer && embedObj.footer.text) len += embedObj.footer.text.length;
+        if (embedObj.author && embedObj.author.name) len += embedObj.author.name.length;
+        if (embedObj.fields) {
+          for (const field of embedObj.fields) {
+            if (field.name) len += field.name.length;
+            if (field.value) len += field.value.length;
+          }
+        }
+        return len;
+      };
+
+      // Select best fit parameters to keep embed size under 6000 limit
+      let chosenParams = null;
+      let bestEmbed = null;
+      const attemptParams = [
+        { includeAnswers: true, maxValLen: 300 },
+        { includeAnswers: true, maxValLen: 200 },
+        { includeAnswers: false, maxValLen: 300 },
+        { includeAnswers: false, maxValLen: 200 },
+        { includeAnswers: false, maxValLen: 120 },
+        { includeAnswers: false, maxValLen: 80 }
       ];
 
-      // Add sub-role if applicable
-      if (payload.media_role) {
-        fields.push({ name: '🎨 Specialization', value: payload.media_role, inline: true });
-      } else if (payload.dev_role) {
-        fields.push({ name: '💻 Developer Role', value: payload.dev_role, inline: true });
+      for (const params of attemptParams) {
+        const embed = getEmbedJson(tempMsgId, params.includeAnswers, params.maxValLen);
+        const embedLen = calculateEmbedLength(embed);
+        if (embedLen <= 5800) {
+          bestEmbed = embed;
+          chosenParams = params;
+          console.log(`Chose embed with includeAnswers=${params.includeAnswers}, maxValLen=${params.maxValLen} (length: ${embedLen})`);
+          break;
+        }
       }
 
-      // Add portfolio or profile links if they exist
-      if (payload.portfolio) {
-        fields.push({ name: '🔗 Portfolio', value: payload.portfolio, inline: true });
-      }
-      if (payload.roblox_profile) {
-        fields.push({ name: '🎮 Roblox Profile', value: payload.roblox_profile, inline: true });
+      if (!chosenParams) {
+        chosenParams = { includeAnswers: false, maxValLen: 50 };
+        bestEmbed = getEmbedJson(tempMsgId, chosenParams.includeAnswers, chosenParams.maxValLen);
       }
 
-      // Divider
-      fields.push({ name: '\u200b', value: '━━━━━━━━━━━━━━━━━━━━━━', inline: false });
-
-      // Filter Q&As to exclude profile fields
-      const profileKeys = ['hours_active', 'media_role', 'dev_role', 'roblox_profile', 'portfolio', 'guidelines_agree'];
-      const detailQuestions = schema.questions.filter(q => !profileKeys.includes(q.id));
-
-      // Add all Q&As to the embed
-      detailQuestions.forEach((q, idx) => {
-        fields.push({
-          name: `${idx + 1}. ${q.label}`,
-          value: formatEmbedValue(payload[q.id]),
-          inline: false
-        });
-      });
-
-      // Build embed
-      const buildEmbed = (apprUrl, rejUrl) => ({
-        title: `📝 New Application — ${payload.discord_tag}`,
-        description:
-          `A new **${schema.title}** application was submitted.\n\n` +
-          `> 📅 Submitted: ${submittedAt}\n\n` +
-          `**⚡ Quick Actions:**\n` +
-          `• [🟢 Open Portal & Approve](${apprUrl})\n` +
-          `• [🔴 Open Portal & Reject](${rejUrl})`,
-        color: CONFIG.COLOR_PENDING,
-        fields,
-        footer: {
-          text: `${CONFIG.SERVER_NAME} • Staff Application Portal`,
-        },
-        timestamp: new Date().toISOString()
-      });
-
-      // Build full webhook payload (with optional avatar & thread support)
-      const buildWebhookPayload = (apprUrl, rejUrl) => {
+      const buildWebhookPayload = (msgId) => {
         const body = {
           username: CONFIG.WEBHOOK_USERNAME,
-          embeds: [buildEmbed(apprUrl, rejUrl)]
+          embeds: [getEmbedJson(msgId, chosenParams.includeAnswers, chosenParams.maxValLen)]
         };
         if (CONFIG.WEBHOOK_AVATAR) body.avatar_url = CONFIG.WEBHOOK_AVATAR;
         return body;
@@ -830,7 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (CONFIG.THREAD_ID) postUrl += `&thread_id=${CONFIG.THREAD_ID}`;
 
       // 2. Post to webhook
-      const initialPayload = buildWebhookPayload(approveUrl, rejectUrl);
+      const initialPayload = buildWebhookPayload(tempMsgId);
       const resp = await sendWithRetry(postUrl, initialPayload, 'POST');
 
       if (resp.ok || resp.status === 204) {
@@ -839,8 +878,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (messageId) {
           // 3. Re-create URLs with the actual messageId
-          const finalUrls = makeReviewUrls(messageId);
-          const finalPayload = buildWebhookPayload(finalUrls.approveUrl, finalUrls.rejectUrl);
+          const finalPayload = buildWebhookPayload(messageId);
 
           // 4. PATCH the message to update the portal links
           let patchUrl = `${CONFIG.WEBHOOK_URL}/messages/${messageId}`;
