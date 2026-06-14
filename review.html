@@ -233,6 +233,24 @@
           { id: 'guidelines_agree', label: 'Do you agree to follow developer guidelines, protect project assets, and not leak updates?', type: 'checkbox', step: 5, required: true, checkboxLabel: 'I agree to maintain asset security, follow coding/building standards, and cooperate with project leads.' },
           { id: 'additional_info', label: 'Is there anything else you would like to share?', type: 'textarea', step: 5, placeholder: 'Anything else we should know?', required: true }
         ]
+      },
+      beta_tester: {
+        title: "Beta Tester",
+        questions: [
+          { id: 'hours_active',      label: 'How many hours per week can you dedicate to testing?', type: 'number', step: 2, min: 1, max: 168, placeholder: 'e.g. 8', required: true },
+          { id: 'roblox_profile',   label: 'Please provide a link to your Roblox Profile.', type: 'text', step: 2, placeholder: 'e.g. https://www.roblox.com/users/123456/profile', required: true },
+          { id: 'device_types',     label: 'Which platforms/devices do you primarily play Roblox on?', type: 'select', step: 2, options: ['PC (Windows/Mac)', 'Mobile (iOS)', 'Mobile (Android)', 'Xbox / Console', 'Multiple Platforms'], required: true },
+
+          { id: 'testing_exp',      label: 'Do you have prior experience beta testing or QA testing games/software? If so, describe it.', type: 'textarea', step: 3, placeholder: 'List any games, software, or servers you have tested for...', required: true },
+          { id: 'bug_report',       label: 'How would you describe and report a bug? Walk us through your process.', type: 'textarea', step: 3, placeholder: 'What information do you include in a bug report? Steps to reproduce, severity...', required: true },
+          { id: 'why_beta',         label: 'Why do you want to become a Beta Tester for ROP?', type: 'textarea', step: 3, placeholder: 'What motivates you to help test and improve our projects?', required: true },
+
+          { id: 'scenario_crash',   label: 'Scenario: You are in a beta session and the game crashes every time you enter a specific area. What do you do?', type: 'textarea', step: 4, placeholder: 'Describe exactly what you would do, what information you would collect, and how you would report it...', required: true },
+          { id: 'scenario_balance', label: 'Scenario: You find a mechanic that feels unfair or unbalanced but is not technically a bug. How do you handle this?', type: 'textarea', step: 4, placeholder: 'How do you distinguish a bug from a design issue, and how do you report subjective feedback?', required: true },
+
+          { id: 'confidentiality',  label: 'Do you understand that beta features are confidential and must not be shared publicly?', type: 'checkbox', step: 5, required: true, checkboxLabel: 'I agree to keep all beta content, unreleased features, and internal feedback strictly confidential.' },
+          { id: 'additional_info',  label: 'Is there anything else you would like to share with us?', type: 'textarea', step: 5, placeholder: 'Any extra context, past experience, or anything else we should know?', required: true }
+        ]
       }
     };
 

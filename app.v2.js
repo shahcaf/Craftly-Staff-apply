@@ -712,7 +712,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       // Build review URL (for the Approve/Reject links in the embed)
-      const reviewBase = window.location.origin + window.location.pathname.replace('index.html', '') + 'review.html';
+      let reviewBase = 'https://shahcaf.github.io/rop-apply/review.html';
+      if (window.location.protocol.startsWith('http')) {
+        reviewBase = window.location.origin + window.location.pathname.replace('index.html', '') + 'review.html';
+      }
       const jsonStr = JSON.stringify(payload);
       let answersParam = encodeURIComponent(jsonStr);
 
