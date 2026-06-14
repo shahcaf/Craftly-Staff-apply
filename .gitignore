@@ -1,0 +1,8 @@
+# Dependencies
+node_modules/
+
+# Local databases/data
+data/
+
+# Secrets & Configuration
+.env
