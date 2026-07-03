@@ -887,13 +887,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const uA = new URL(CONFIG.REVIEW_BASE);
             uA.searchParams.set('action', 'approve');
             uA.searchParams.set('tag', encodeURIComponent(payload.discord_tag));
-            // no message_id param; not required for portal
+            if (typeof answersParam !== 'undefined' && answersParam) uA.searchParams.set('answers', answersParam);
             cfgApprove = uA.toString();
             const uR = new URL(CONFIG.REVIEW_BASE);
             uR.searchParams.set('action', 'reject');
             uR.searchParams.set('tag', encodeURIComponent(payload.discord_tag));
-            // no message_id param; not required for portal
+            if (typeof answersParam !== 'undefined' && answersParam) uR.searchParams.set('answers', answersParam);
             cfgReject = uR.toString();
+            console.log('Built REVIEW_BASE portal URLs:', cfgApprove, cfgReject);
           } catch (e) {
             cfgApprove = cfgReject = null;
           }
