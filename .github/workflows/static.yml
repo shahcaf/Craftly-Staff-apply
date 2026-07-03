@@ -31,6 +31,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: List repo files for debugging
+        run: |
+          echo "--- repo root ---"
+          ls -la
+          echo "--- find top-level files ---"
+          find . -maxdepth 2 -type f -print | sed -e 's|^./||' | sort
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
