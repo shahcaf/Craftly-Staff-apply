@@ -870,7 +870,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
       for (const params of attemptParams) {
         const embed = getEmbedJson(tempMsgId, params.includeAnswers, params.maxValLen);
-        const embedLen = calculateEmbedLength(embed);
+
+        // Estimate final embed size including the portal links text that will
+        // be appended later in buildWebhookPayload. If portal links are present
+        // they can push the embed over Discord's limit, so include them in the
+        // size check.
+        let testEmbed = JSON.parse(JSON.stringify(embed));
+        // build portal text candidates similar to buildWebhookPayload
+        const testUrls = makeReviewUrls(tempMsgId);
+        let testCfgApprove = null, testCfgReject = null;
+        if (CONFIG.REVIEW_BASE && CONFIG.REVIEW_BASE.startsWith('http')) {
+          try {
+            const uA = new URL(CONFIG.REVIEW_BASE);
+            uA.searchParams.set('action', 'approve');
+            uA.searchParams.set('tag', encodeURIComponent(payload.discord_tag));
+            if (typeof answersParam !== 'undefined' && answersParam) uA.searchParams.set('answers', answersParam);
+            testCfgApprove = uA.toString();
+            const uR = new URL(CONFIG.REVIEW_BASE);
+            uR.searchParams.set('action', 'reject');
+            uR.searchParams.set('tag', encodeURIComponent(payload.discord_tag));
+            if (typeof answersParam !== 'undefined' && answersParam) uR.searchParams.set('answers', answersParam);
+            testCfgReject = uR.toString();
+          } catch (e) {
+            testCfgApprove = testCfgReject = null;
+          }
+        }
+
+        const testPortalText = (testCfgApprove && testCfgReject)
+          ? `\n\nOpen review portal:\n• [🟢 Approve](${testCfgApprove})\n• [🔴 Reject](${testCfgReject})`
+          : (testUrls.approveUrl && testUrls.rejectUrl)
+            ? `\n\nOpen review portal:\n• [🟢 Approve](${testUrls.approveUrl})\n• [🔴 Reject](${testUrls.rejectUrl})`
+            : '\n\nOpen the review portal on the server where this app is hosted.';
+
+        testEmbed.description = (testEmbed.description || '') + testPortalText;
+
+        const embedLen = calculateEmbedLength(testEmbed);
         if (embedLen <= 5800) {
           bestEmbed = embed;
           chosenParams = params;
