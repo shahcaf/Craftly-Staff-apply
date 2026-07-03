@@ -729,12 +729,13 @@ document.addEventListener('DOMContentLoaded', () => {
         reviewBase = window.location.origin + window.location.pathname.replace('index.html', '') + 'review.html';
       }
       const jsonStr = JSON.stringify(payload);
-      let answersParam = encodeURIComponent(jsonStr);
-
+      // Do not pre-encode the JSON string here — let URLSearchParams handle encoding.
+      // Use a 'c:' prefix when CompressionStream produced a URL-safe base64 token.
+      let answersParam = jsonStr;
       if (typeof CompressionStream !== 'undefined') {
         const compressed = await compressPayload(jsonStr);
         if (compressed) {
-          answersParam = 'c:' + compressed;
+          answersParam = 'c:' + compressed; // compressed is URL-safe base64
         }
       }
 
@@ -763,6 +764,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const u = new URL(baseUrl);
           u.searchParams.set('action', action);
           u.searchParams.set('tag', encodedTag);
+          // Attach answers payload so the static review portal can load the data
+          if (typeof answersParam !== 'undefined' && answersParam) u.searchParams.set('answers', answersParam);
           return u.toString();
         };
 
