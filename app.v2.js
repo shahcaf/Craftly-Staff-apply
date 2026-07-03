@@ -944,6 +944,39 @@ document.addEventListener('DOMContentLoaded', () => {
           embeds: [getEmbedJson(msgId, chosenParams.includeAnswers, chosenParams.maxValLen)]
         };
 
+        // Final safety: if the selected embed still exceeds Discord's limit,
+        // replace with a minimal embed containing only essential info and
+        // the portal links. This guarantees the webhook will not be rejected
+        // due to embed size.
+        try {
+          const finalLen = calculateEmbedLength(body.embeds[0]);
+          if (finalLen > 5800) {
+            console.warn('Selected embed too large (', finalLen, '). Falling back to minimal embed.');
+            const minimalEmbed = {
+              title: `📝 New Application — ${payload.discord_tag}`,
+              description: `A new **${schema.title}** application was submitted.\n\n` +
+                `• Discord Username: **${payload.discord_tag}**\n` +
+                `• Discord ID: \`${payload.discord_id || 'N/A'}\`\n`,
+              color: CONFIG.COLOR_PENDING,
+              fields: [],
+              timestamp: new Date().toISOString(),
+              footer: { text: `${CONFIG.SERVER_NAME} • Staff Application Portal` }
+            };
+
+            // Attach portal links into description
+            const portalLinks = (cfgApprove && cfgReject)
+              ? `\nOpen review portal:\n• [🟢 Approve](${cfgApprove})\n• [🔴 Reject](${cfgReject})`
+              : (urls.approveUrl && urls.rejectUrl)
+                ? `\nOpen review portal:\n• [🟢 Approve](${urls.approveUrl})\n• [🔴 Reject](${urls.rejectUrl})`
+                : '\nOpen the review portal on the server where this app is hosted.';
+
+            minimalEmbed.description = (minimalEmbed.description || '') + portalLinks;
+            body.embeds[0] = minimalEmbed;
+          }
+        } catch (e) {
+          console.warn('Failed to evaluate embed length for final safeguard', e);
+        }
+
         // NOTE: Link-style components have proven unreliable in this environment
         // (Discord may strip or reject them). Use markdown portal links in the
         // embed description which are guaranteed to render and be clickable.
