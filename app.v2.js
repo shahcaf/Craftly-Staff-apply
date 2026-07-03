@@ -2,12 +2,19 @@
 // CONFIGURATION — Edit these values for your Discord server
 // ============================================================
 const CONFIG = {
-  WEBHOOK_URL: 'https://discord.com/api/webhooks/1508490753784152229/2wKdOZuCETLKraReRhbHuCkWFJ0B7OsB690dzcSaMF_dxruSjjoG_ScyYdmxJg3kxBvL',
-  SERVER_NAME: '|ROP| Right Order Party',
+  WEBHOOK_URL: 'https://discord.com/api/webhooks/1522596919019573479/hNFVQE2n4DkMGrHhxt-WQU4R9sI8T5lj8O-dq3q6Y3lgLv3IRYlWzXxDHp-G7lw8zN1K',
+  SERVER_NAME: 'Craftly.gg',
+  // Optional: absolute URL to your review portal (https://...). If you serve
+  // the app locally via file:// this should be set so Discord link buttons
+  // can use a proper https URL. Update this to your hosted review page if needed.
+  REVIEW_BASE: 'https://shahcaf.github.io/Craftly-Staff-apply/review.html',
+  // Optional: if you run the Node bot server, set BOT_ENDPOINT to its public URL
+  // e.g. 'https://example.com/api/sendReviewMessage'
+  BOT_ENDPOINT: '',
   // Optional: set a Discord thread ID to post all applications into a specific thread
   THREAD_ID: null,
   // Webhook bot appearance
-  WEBHOOK_USERNAME: '📋 ROP Application System',
+  WEBHOOK_USERNAME: '📋 Craftly.gg Application System',
   WEBHOOK_AVATAR: 'https://cdn.discordapp.com/emojis/1056479967568371712.png', // set to any image URL or null
   // Embed accent colors
   COLOR_PENDING:  5793266,  // Discord Blurple
@@ -16,16 +23,21 @@ const CONFIG = {
 };
 // ============================================================
 
+// Debug: log the webhook URL at runtime to confirm which webhook is used
+console.log('CONFIG.WEBHOOK_URL =', CONFIG.WEBHOOK_URL);
+
 // ============================================================
 // ANTI-SPAM CONFIGURATION
 // ============================================================
 const ANTI_SPAM = {
   // How long (ms) a user must wait before re-submitting (default: 10 minutes)
-  COOLDOWN_MS: 10 * 60 * 1000,
+  // Set to 0 to disable cooldown between submissions
+  COOLDOWN_MS: 0,
   // Key used to store submission metadata in localStorage
-  STORAGE_KEY: 'rop_last_submission',
+  STORAGE_KEY: 'craftly_last_submission',
   // Maximum submissions allowed from the same browser per day
-  MAX_PER_DAY: 3,
+  // Set to 0 to disable daily submission limit
+  MAX_PER_DAY: 0,
 };
 
 /**
@@ -54,8 +66,8 @@ function checkAntiSpam(discordId) {
       }
     }
 
-    // Daily limit check
-    if (data.submissionsToday) {
+    // Daily limit check (only enforce if MAX_PER_DAY > 0)
+    if (ANTI_SPAM.MAX_PER_DAY > 0 && data.submissionsToday) {
       const lastDate = new Date(data.lastSubmit).toDateString();
       const today = new Date().toDateString();
       if (lastDate === today && data.submissionsToday >= ANTI_SPAM.MAX_PER_DAY) {
@@ -184,7 +196,7 @@ const ROLE_SCHEMAS = {
       { id: 'portfolio',      label: 'Please provide a link to your portfolio or past work.', type: 'text', step: 2, placeholder: 'e.g. Behance, YouTube channel, Drive link...', required: true, helperText: 'Provide links to your graphic designs, edit reels, or channels.' },
       { id: 'tools_used',     label: 'What software/tools do you specialize in?', type: 'text', step: 2, placeholder: 'e.g. Photoshop, Premiere Pro, After Effects, Figma, Canva...', required: true },
       
-      { id: 'why_media',      label: 'Why do you want to join our Media Team?', type: 'textarea', step: 3, placeholder: 'Tell us why you want to design/create for ROP...', required: true },
+      { id: 'why_media',      label: 'Why do you want to join our Media Team?', type: 'textarea', step: 3, placeholder: 'Tell us why you want to design/create for Craftly.gg...', required: true },
       { id: 'prior_work',     label: 'Detail any prior experience creating media content for servers or organizations.', type: 'textarea', step: 3, placeholder: 'Describe your past projects and responsibilities...', required: true },
       { id: 'strengths_media', label: 'What are your core creative strengths?', type: 'textarea', step: 3, placeholder: 'e.g. visual styling, motion graphics, audio design, branding...', required: true },
       
@@ -193,7 +205,7 @@ const ROLE_SCHEMAS = {
       { id: 'handle_disagreement', label: 'Scenario: You disagree with a lead or staff member on design direction. How do you resolve this?', type: 'textarea', step: 4, placeholder: 'Explain how you approach differences in creative vision...', required: true },
       
       { id: 'hobbies',        label: 'What are your hobbies or interests outside of media work?', type: 'textarea', step: 5, placeholder: 'Tell us about yourself...', required: true },
-      { id: 'guidelines_agree', label: 'Do you agree to follow ROP media guidelines and represent the server professionally?', type: 'checkbox', step: 5, required: true, checkboxLabel: 'I agree to follow design guidelines, use licensed assets, and communicate professionally.' },
+      { id: 'guidelines_agree', label: 'Do you agree to follow Craftly.gg media guidelines and represent the community professionally?', type: 'checkbox', step: 5, required: true, checkboxLabel: 'I agree to follow design guidelines, use licensed assets, and communicate professionally.' },
       { id: 'additional_info', label: 'Is there anything else you would like to share?', type: 'textarea', step: 5, placeholder: 'Anything else we should know?', required: true }
     ]
   },
@@ -206,7 +218,7 @@ const ROLE_SCHEMAS = {
       { id: 'portfolio',      label: 'Please provide a link to your portfolio or showcases.', type: 'text', step: 2, placeholder: 'e.g. DevForum portfolio, GitHub, Roblox place links...', required: true },
       
       { id: 'prior_games',    label: 'List any Roblox games you have contributed to or worked on.', type: 'textarea', step: 3, placeholder: 'Provide links and detail what you did in each game...', required: true },
-      { id: 'why_dev',        label: 'Why do you want to join the ROP Dev Team?', type: 'textarea', step: 3, placeholder: 'What motivates you to build/script for ROP?', required: true },
+      { id: 'why_dev',        label: 'Why do you want to join the Craftly.gg Dev Team?', type: 'textarea', step: 3, placeholder: 'What motivates you to build/script for Craftly.gg?', required: true },
       { id: 'collaboration',  label: 'How do you handle working as a team with other devs (builders, scripters, modelers)?', type: 'textarea', step: 3, placeholder: 'Describe your teamwork and communication habits...', required: true },
       
       { id: 'handle_bug',     label: 'Scenario: A critical game-breaking bug is discovered in production right before an event. How do you react?', type: 'textarea', step: 4, placeholder: 'Detail your troubleshooting and response steps...', required: true },
@@ -228,7 +240,7 @@ const ROLE_SCHEMAS = {
 
       { id: 'testing_exp',      label: 'Do you have prior experience beta testing or QA testing games/software? If so, describe it.', type: 'textarea', step: 3, placeholder: 'List any games, software, or servers you have tested for...', required: true },
       { id: 'bug_report',       label: 'How would you describe and report a bug? Walk us through your process.', type: 'textarea', step: 3, placeholder: 'What information do you include in a bug report? Steps to reproduce, severity...', required: true },
-      { id: 'why_beta',         label: 'Why do you want to become a Beta Tester for ROP?', type: 'textarea', step: 3, placeholder: 'What motivates you to help test and improve our projects?', required: true },
+      { id: 'why_beta',         label: 'Why do you want to become a Beta Tester for Craftly.gg?', type: 'textarea', step: 3, placeholder: 'What motivates you to help test and improve our projects?', required: true },
 
       { id: 'scenario_crash',   label: 'Scenario: You are in a beta session and the game crashes every time you enter a specific area. What do you do?', type: 'textarea', step: 4, placeholder: 'Describe exactly what you would do, what information you would collect, and how you would report it...', required: true },
       { id: 'scenario_balance', label: 'Scenario: You find a mechanic that feels unfair or unbalanced but is not technically a bug. How do you handle this?', type: 'textarea', step: 4, placeholder: 'How do you distinguish a bug from a design issue, and how do you report subjective feedback?', required: true },
@@ -505,12 +517,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
-    localStorage.setItem('rop_application_draft', JSON.stringify(draft));
+    localStorage.setItem('craftly_application_draft', JSON.stringify(draft));
   }
 
   // Load draft if it exists
   function loadFormDraft() {
-    const raw = localStorage.getItem('rop_application_draft');
+    const raw = localStorage.getItem('craftly_application_draft');
     if (!raw) return;
     try {
       const draft = JSON.parse(raw);
@@ -560,7 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Clear form draft
   function clearFormDraft() {
-    localStorage.removeItem('rop_application_draft');
+    localStorage.removeItem('craftly_application_draft');
   }
 
   // Custom toast notifications helper
@@ -712,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       // Build review URL (for the Approve/Reject links in the embed)
-      let reviewBase = 'https://shahcaf.github.io/rop-apply/review.html';
+      let reviewBase = 'review.html';
       if (window.location.protocol.startsWith('http')) {
         reviewBase = window.location.origin + window.location.pathname.replace('index.html', '') + 'review.html';
       }
@@ -726,22 +738,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      const encodedTag = encodeURIComponent(payload.discord_tag);
+      const encodedTag = payload.discord_tag;
       const tempMsgId = 'TEMP_MSG_ID';
 
-      // Helper to generate review URLs safely (omits answers parameter if it exceeds Discord's 2000-character URL limit)
-      const makeReviewUrls = (msgId, includeAnswers) => {
-        let appr = `${reviewBase}?action=approve&tag=${encodedTag}&message_id=${msgId}`;
-        let rej  = `${reviewBase}?action=reject&tag=${encodedTag}&message_id=${msgId}`;
-        
-        if (includeAnswers && answersParam) {
-          const testAppr = `${appr}&answers=${answersParam}`;
-          if (testAppr.length < 2000) {
-            appr = testAppr;
-            rej = `${rej}&answers=${answersParam}`;
+      // Helper to generate absolute review URLs using the URL API. This
+      // guarantees valid, fully-qualified URLs for Discord link buttons.
+      const makeReviewUrls = (msgId) => {
+        // Prefer explicit CONFIG.REVIEW_BASE if provided and absolute
+        let baseUrl = (CONFIG.REVIEW_BASE && CONFIG.REVIEW_BASE.startsWith('http')) ? CONFIG.REVIEW_BASE : null;
+
+        // Otherwise prefer the detected reviewBase when running over http/https
+        if (!baseUrl) {
+          if (reviewBase.startsWith('http')) baseUrl = reviewBase;
+          else if (window.location.protocol && window.location.protocol.startsWith('http')) {
+            baseUrl = window.location.origin.replace(/\/$/, '') + '/' + reviewBase.replace(/^\//, '');
           }
         }
-        return { approveUrl: appr, rejectUrl: rej };
+
+        // If we couldn't determine an absolute HTTP(S) URL, return nulls so
+        // calling code can avoid creating invalid link buttons.
+        if (!baseUrl || !baseUrl.startsWith('http')) return { approveUrl: null, rejectUrl: null };
+
+        const build = (action) => {
+          const u = new URL(baseUrl);
+          u.searchParams.set('action', action);
+          u.searchParams.set('tag', encodedTag);
+          return u.toString();
+        };
+
+        return { approveUrl: build('approve'), rejectUrl: build('reject') };
       };
 
       // Format field helper with truncation
@@ -758,7 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const submittedAt = `<t:${Math.floor(Date.now() / 1000)}:F>`;
 
       const getEmbedJson = (msgId, includeAnswers, maxValLen) => {
-        const urls = makeReviewUrls(msgId, includeAnswers);
+        const urls = makeReviewUrls(msgId);
         
         const fields = [
           { name: '📋 Applied Role',       value: safeVal(schema.title),         inline: true },
@@ -800,9 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
           description:
             `A new **${schema.title}** application was submitted.\n\n` +
             `> 📅 Submitted: ${submittedAt}\n\n` +
-            `**⚡ Quick Actions:**\n` +
-            `• [🟢 Open Portal & Approve](${urls.approveUrl})\n` +
-            `• [🔴 Open Portal & Reject](${urls.rejectUrl})`,
+            `Use the action buttons below to open the review portal.`,
           color: CONFIG.COLOR_PENDING,
           fields,
           footer: {
@@ -856,10 +879,41 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const buildWebhookPayload = (msgId) => {
+        const urls = makeReviewUrls(msgId);
+        // Also build explicit links from configured REVIEW_BASE when available
+        let cfgApprove = null, cfgReject = null;
+        if (CONFIG.REVIEW_BASE && CONFIG.REVIEW_BASE.startsWith('http')) {
+          try {
+            const uA = new URL(CONFIG.REVIEW_BASE);
+            uA.searchParams.set('action', 'approve');
+            uA.searchParams.set('tag', encodeURIComponent(payload.discord_tag));
+            // no message_id param; not required for portal
+            cfgApprove = uA.toString();
+            const uR = new URL(CONFIG.REVIEW_BASE);
+            uR.searchParams.set('action', 'reject');
+            uR.searchParams.set('tag', encodeURIComponent(payload.discord_tag));
+            // no message_id param; not required for portal
+            cfgReject = uR.toString();
+          } catch (e) {
+            cfgApprove = cfgReject = null;
+          }
+        }
         const body = {
           username: CONFIG.WEBHOOK_USERNAME,
           embeds: [getEmbedJson(msgId, chosenParams.includeAnswers, chosenParams.maxValLen)]
         };
+
+        // NOTE: Link-style components have proven unreliable in this environment
+        // (Discord may strip or reject them). Use markdown portal links in the
+        // embed description which are guaranteed to render and be clickable.
+        const fallbackEmbed = body.embeds[0];
+        const portalText = (cfgApprove && cfgReject)
+          ? `\n\nOpen review portal:\n• [🟢 Approve](${cfgApprove})\n• [🔴 Reject](${cfgReject})`
+          : (urls.approveUrl && urls.rejectUrl)
+            ? `\n\nOpen review portal:\n• [🟢 Approve](${urls.approveUrl})\n• [🔴 Reject](${urls.rejectUrl})`
+            : '\n\nOpen the review portal on the server where this app is hosted.';
+        fallbackEmbed.description = (fallbackEmbed.description || '') + portalText;
+
         if (CONFIG.WEBHOOK_AVATAR) body.avatar_url = CONFIG.WEBHOOK_AVATAR;
         return body;
       };
@@ -868,25 +922,57 @@ document.addEventListener('DOMContentLoaded', () => {
       let postUrl = CONFIG.WEBHOOK_URL + '?wait=true';
       if (CONFIG.THREAD_ID) postUrl += `&thread_id=${CONFIG.THREAD_ID}`;
 
-      // 2. Post to webhook
+      // 2. If a bot endpoint is configured, POST to it to let the bot send
+      // a native interaction-enabled message. Otherwise fall back to webhook.
+      let resp = null;
       const initialPayload = buildWebhookPayload(tempMsgId);
-      const resp = await sendWithRetry(postUrl, initialPayload, 'POST');
-
-      if (resp.ok || resp.status === 204) {
-        const respData = await resp.json();
-        const messageId = respData.id;
-
-        if (messageId) {
-          // 3. Re-create URLs with the actual messageId
-          const finalPayload = buildWebhookPayload(messageId);
-
-          // 4. PATCH the message to update the portal links
-          let patchUrl = `${CONFIG.WEBHOOK_URL}/messages/${messageId}`;
-          if (CONFIG.THREAD_ID) patchUrl += `?thread_id=${CONFIG.THREAD_ID}`;
-          await sendWithRetry(patchUrl, finalPayload, 'PATCH');
+      // Debug: log the payload and endpoints so we can inspect what is sent to Discord
+      try {
+        console.log('Initial webhook payload (preview):', initialPayload);
+      } catch (e) {
+        console.warn('Failed to serialize initialPayload for logging', e);
+      }
+      if (CONFIG.BOT_ENDPOINT && CONFIG.BOT_ENDPOINT.startsWith('http')) {
+        try {
+          resp = await fetch(CONFIG.BOT_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: initialPayload.embeds[0].title,
+              description: initialPayload.embeds[0].description,
+              fields: initialPayload.embeds[0].fields,
+              footerText: initialPayload.embeds[0].footer?.text,
+              color: initialPayload.embeds[0].color
+            })
+          });
+          console.log('Posted to BOT_ENDPOINT:', CONFIG.BOT_ENDPOINT, 'status=', resp.status);
+        } catch (e) {
+          resp = null;
         }
+      }
 
-        // Success!
+      if (!resp) {
+        // fallback to webhook
+        const webhookPostUrl = CONFIG.WEBHOOK_URL + '?wait=true';
+        if (CONFIG.THREAD_ID) webhookPostUrl += `&thread_id=${CONFIG.THREAD_ID}`;
+        console.log('Posting webhook to:', webhookPostUrl);
+        try {
+          resp = await sendWithRetry(webhookPostUrl, initialPayload, 'POST');
+          console.log('Received response status from Discord:', resp && resp.status);
+          try {
+            const respText = resp ? await resp.clone().text() : null;
+            console.log('Discord response body:', respText);
+          } catch (e) {
+            console.warn('Could not read Discord response body', e);
+          }
+        } catch (e) {
+          console.error('Failed to POST webhook:', e);
+          resp = null;
+        }
+      }
+
+      if (resp && (resp.ok || resp.status === 204)) {
+        // Success — single POST delivered the message. No PATCH needed.
         recordSubmission(); // anti-spam: log this submission
         clearFormDraft();
 
@@ -894,8 +980,9 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.innerText = 'Your application was sent to the staff review channel successfully. You will be notified on Discord once a decision is made. Thank you for applying!';
         statusIconSuccess.classList.remove('hidden');
       } else {
-        const err = await resp.text();
-        throw new Error(`Discord returned ${resp.status}: ${err}`);
+        const errText = resp ? await resp.text() : 'No response';
+        const statusCode = resp ? resp.status : 0;
+        throw new Error(`Discord returned ${statusCode}: ${errText}`);
       }
     } catch (error) {
       statusTitle.innerText = 'Submission Failed';
@@ -1002,7 +1089,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (themeToggleBtn && themeMenu) {
     // Load saved theme
-    const savedTheme = localStorage.getItem('rop-theme') || 'dark';
+    const savedTheme = localStorage.getItem('craftly-theme') || 'dark';
     applyTheme(savedTheme);
 
     // Toggle menu dropdown
@@ -1018,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', () => {
       opt.addEventListener('click', () => {
         const selected = opt.getAttribute('data-theme');
         applyTheme(selected);
-        localStorage.setItem('rop-theme', selected);
+        localStorage.setItem('craftly-theme', selected);
         
         // Close menu
         themeToggleBtn.setAttribute('aria-expanded', 'false');

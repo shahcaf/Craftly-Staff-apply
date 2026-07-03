@@ -1,0 +1,15 @@
+{
+  "name": "craftly-review-bot",
+  "version": "1.0.0",
+  "description": "Minimal Discord bot + interactions endpoint to post review messages with actionable buttons",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.12",
+    "tweetnacl": "^1.0.3",
+    "uuid": "^9.0.0"
+  }
+}

@@ -125,11 +125,11 @@
     </main>
 
     <footer class="app-footer">
-      <a href="https://discord.gg/yNgeQmmnWs" target="_blank" rel="noopener noreferrer" class="discord-join-btn">
+      <a href="https://discord.gg/ByfdqSw6AB" target="_blank" rel="noopener noreferrer" class="discord-join-btn">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36" width="16" height="16" style="width: 16px; height: 16px; min-width: 16px; min-height: 16px; flex-shrink: 0; vertical-align: middle; margin-right: 4px;"><path fill="currentColor" d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.4-5c.89-.65,1.76-1.34,2.58-2.07a75.14,75.14,0,0,0,72.57,0c.82.73,1.69,1.42,2.58,2.07a68.43,68.43,0,0,1-10.4,5,77.7,77.7,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129,54.65,123.5,31.58,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/></svg>
         Join our Discord
       </a>
-      <p>&copy; 2026 |ROP| Right Order Party &mdash; Review Dashboard</p>
+      <p>&copy; 2026 Craftly.gg &mdash; Review Dashboard</p>
     </footer>
   </div>
 
@@ -138,10 +138,13 @@
     // CONFIGURATION — Edit these values for your Discord server
     // ============================================================
     const CONFIG = {
-      WEBHOOK_URL: 'https://discord.com/api/webhooks/1508490753784152229/2wKdOZuCETLKraReRhbHuCkWFJ0B7OsB690dzcSaMF_dxruSjjoG_ScyYdmxJg3kxBvL',
+      WEBHOOK_URL: 'https://discord.com/api/webhooks/1522596919019573479/hNFVQE2n4DkMGrHhxt-WQU4R9sI8T5lj8O-dq3q6Y3lgLv3IRYlWzXxDHp-G7lw8zN1K',
       SERVER_NAME: 'Our Discord Server'
     };
     // ============================================================
+
+    // Debug: log the webhook URL at runtime to confirm which webhook is used
+    console.log('REVIEW CONFIG.WEBHOOK_URL =', CONFIG.WEBHOOK_URL);
 
     // sendWithRetry moved inside DOMContentLoaded to avoid scope issues
 
@@ -200,7 +203,7 @@
           { id: 'portfolio',      label: 'Please provide a link to your portfolio or past work.', type: 'text', step: 2, placeholder: 'e.g. Behance, YouTube channel, Drive link...', required: true, helperText: 'Provide links to your graphic designs, edit reels, or channels.' },
           { id: 'tools_used',     label: 'What software/tools do you specialize in?', type: 'text', step: 2, placeholder: 'e.g. Photoshop, Premiere Pro, After Effects, Figma, Canva...', required: true },
           
-          { id: 'why_media',      label: 'Why do you want to join our Media Team?', type: 'textarea', step: 3, placeholder: 'Tell us why you want to design/create for ROP...', required: true },
+          { id: 'why_media',      label: 'Why do you want to join our Media Team?', type: 'textarea', step: 3, placeholder: 'Tell us why you want to design/create for Craftly.gg...', required: true },
           { id: 'prior_work',     label: 'Detail any prior experience creating media content for servers or organizations.', type: 'textarea', step: 3, placeholder: 'Describe your past projects and responsibilities...', required: true },
           { id: 'strengths_media', label: 'What are your core creative strengths?', type: 'textarea', step: 3, placeholder: 'e.g. visual styling, motion graphics, audio design, branding...', required: true },
           
@@ -209,7 +212,7 @@
           { id: 'handle_disagreement', label: 'Scenario: You disagree with a lead or staff member on design direction. How do you resolve this?', type: 'textarea', step: 4, placeholder: 'Explain how you approach differences in creative vision...', required: true },
           
           { id: 'hobbies',        label: 'What are your hobbies or interests outside of media work?', type: 'textarea', step: 5, placeholder: 'Tell us about yourself...', required: true },
-          { id: 'guidelines_agree', label: 'Do you agree to follow ROP media guidelines and represent the server professionally?', type: 'checkbox', step: 5, required: true, checkboxLabel: 'I agree to follow design guidelines, use licensed assets, and communicate professionally.' },
+          { id: 'guidelines_agree', label: 'Do you agree to follow Craftly.gg media guidelines and represent the community professionally?', type: 'checkbox', step: 5, required: true, checkboxLabel: 'I agree to follow design guidelines, use licensed assets, and communicate professionally.' },
           { id: 'additional_info', label: 'Is there anything else you would like to share?', type: 'textarea', step: 5, placeholder: 'Anything else we should know?', required: true }
         ]
       },
@@ -222,7 +225,7 @@
           { id: 'portfolio',      label: 'Please provide a link to your portfolio or showcases.', type: 'text', step: 2, placeholder: 'e.g. DevForum portfolio, GitHub, Roblox place links...', required: true },
           
           { id: 'prior_games',    label: 'List any Roblox games you have contributed to or worked on.', type: 'textarea', step: 3, placeholder: 'Provide links and detail what you did in each game...', required: true },
-          { id: 'why_dev',        label: 'Why do you want to join the ROP Dev Team?', type: 'textarea', step: 3, placeholder: 'What motivates you to build/script for ROP?', required: true },
+          { id: 'why_dev',        label: 'Why do you want to join the Craftly.gg Dev Team?', type: 'textarea', step: 3, placeholder: 'What motivates you to build/script for Craftly.gg?', required: true },
           { id: 'collaboration',  label: 'How do you handle working as a team with other devs (builders, scripters, modelers)?', type: 'textarea', step: 3, placeholder: 'Describe your teamwork and communication habits...', required: true },
           
           { id: 'handle_bug',     label: 'Scenario: A critical game-breaking bug is discovered in production right before an event. How do you react?', type: 'textarea', step: 4, placeholder: 'Detail your troubleshooting and response steps...', required: true },
@@ -243,7 +246,7 @@
 
           { id: 'testing_exp',      label: 'Do you have prior experience beta testing or QA testing games/software? If so, describe it.', type: 'textarea', step: 3, placeholder: 'List any games, software, or servers you have tested for...', required: true },
           { id: 'bug_report',       label: 'How would you describe and report a bug? Walk us through your process.', type: 'textarea', step: 3, placeholder: 'What information do you include in a bug report? Steps to reproduce, severity...', required: true },
-          { id: 'why_beta',         label: 'Why do you want to become a Beta Tester for ROP?', type: 'textarea', step: 3, placeholder: 'What motivates you to help test and improve our projects?', required: true },
+          { id: 'why_beta',         label: 'Why do you want to become a Beta Tester for Craftly.gg?', type: 'textarea', step: 3, placeholder: 'What motivates you to help test and improve our projects?', required: true },
 
           { id: 'scenario_crash',   label: 'Scenario: You are in a beta session and the game crashes every time you enter a specific area. What do you do?', type: 'textarea', step: 4, placeholder: 'Describe exactly what you would do, what information you would collect, and how you would report it...', required: true },
           { id: 'scenario_balance', label: 'Scenario: You find a mechanic that feels unfair or unbalanced but is not technically a bug. How do you handle this?', type: 'textarea', step: 4, placeholder: 'How do you distinguish a bug from a design issue, and how do you report subjective feedback?', required: true },
