@@ -787,7 +787,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const getEmbedJson = (msgId, includeAnswers, maxValLen) => {
         const urls = makeReviewUrls(msgId);
-        
+
         const fields = [
           { name: '📋 Applied Role',       value: safeVal(schema.title),         inline: true },
           { name: '🏷️ Discord Username',   value: safeVal(payload.discord_tag),  inline: true },
@@ -815,13 +815,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const profileKeys = ['hours_active', 'media_role', 'dev_role', 'roblox_profile', 'portfolio', 'guidelines_agree'];
         const detailQuestions = schema.questions.filter(q => !profileKeys.includes(q.id));
 
-        detailQuestions.forEach((q, idx) => {
-          fields.push({
-            name: `${idx + 1}. ${q.label}`,
-            value: formatEmbedValue(payload[q.id], maxValLen),
-            inline: false
+        // Only include full Q&A detail fields when includeAnswers is true.
+        if (includeAnswers) {
+          detailQuestions.forEach((q, idx) => {
+            fields.push({
+              name: `${idx + 1}. ${q.label}`,
+              value: formatEmbedValue(payload[q.id], maxValLen),
+              inline: false
+            });
           });
-        });
+        }
 
         return {
           title: `📝 New Application — ${payload.discord_tag}`,
